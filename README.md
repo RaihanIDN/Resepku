@@ -11,7 +11,7 @@
 ## 🛠️ Tech Stack
 - **Backend:** Go (Golang)
 - **Frontend:** HTML5, CSS3 (Montserrat Font)
-- **Database:** (Sebutkan jika pakai SQLite/PostgreSQL, kalau belum bisa dikosongkan)
+- **Database:**
 
 ## 💻 Cara Menjalankan Lokal
 1. Clone repository:
