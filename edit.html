@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Resep - Resepku</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .container-add {
+            max-width: 600px;
+            margin: 120px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .container-add h1 {
+            color: #8BC34A;
+            margin-bottom: 25px;
+            font-weight: 800;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        .form-group input, .form-group textarea {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 14px;
+        }
+        .btn-submit-resep {
+            background-color: #8BC34A;
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 16px;
+        }
+        .btn-submit-resep:hover {
+            background-color: #388E3C;
+        }
+        .link-batal {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            color: #888;
+            text-decoration: none;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <div class="logo">Resepku<br></div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/add-recipe" class="btn-tambah-nav">Tambah Resep</a>
+            <a href="/favorit" target="_blank">Simpan Makanan</a>
+            <div id="navSearchBtn" class="btn-cari-nav">Cari</div>
+        </div>
+    </div>
+
+    <div class="container-add">
+        <h1>🔧 Edit Resep: {{.Title}}</h1>
+        <form action="/moderasi/edit?key=kuncirahasia77&title={{.Title}}" method="POST" enctype="multipart/form-data">
+            
+            <div class="form-group">
+                <label>Nama Masakan</label>
+                <input type="text" name="title" value="{{.Title}}" required>
+            </div>
+
+            <div class="form-group">
+                <label>Foto Masakan (Biarkan kosong jika tidak ingin ganti)</label>
+                <input type="file" name="image" accept="image/*">
+                <small style="margin-top:5px; color:#888;">File saat ini: {{.Image}}</small>
+            </div>
+
+            <div class="form-group">
+                <label>Deskripsi Singkat</label>
+                <textarea name="desc" rows="3" required>{{.Desc}}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Estimasi Waktu</label>
+                <input type="text" name="time" value="{{.Time}}" required>
+            </div>
+
+            <div class="form-group">
+                <label>Bahan-Bahan</label>
+                <textarea name="bahan" rows="5" required>{{.Bahan}}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Cara Memasak</label>
+                <textarea name="langkah" rows="6" required>{{.Langkah}}</textarea>
+            </div>
+
+            <hr style="margin-bottom: 20px; border: 0; border-top: 1px solid #eee;">
+            <p style="margin-bottom: 15px; font-weight: 800; color: #8BC34A;">Detail Penyimpanan</p>
+
+            <div class="form-group">
+                <label>Simpan Dalam</label>
+                <input type="text" name="simpan_dalam" value="{{.SimpanDalam}}">
+            </div>
+
+            <div class="form-group">
+                <label>Masa Simpan</label>
+                <input type="text" name="masa_simpan" value="{{.MasaSimpan}}">
+            </div>
+
+            <div class="form-group">
+                <label>Tempat Simpan</label>
+                <input type="text" name="tempat_simpan" value="{{.TempatSimpan}}">
+            </div>
+
+            <div class="form-group">
+                <label>Kualitas Maksimal</label>
+                <input type="text" name="kualitas_maksimal" value="{{.KualitasMaksimal}}">
+            </div>
+
+            <button type="submit" class="btn-submit-resep">Update Resep</button>
+            <a href="/" class="link-batal">Batalkan Edit</a>
+        </form>
+    </div>
+</body>
+</html>
