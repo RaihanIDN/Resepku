@@ -1,19 +1,29 @@
-# 🍳 Resepku - Kumpulan Resep Makanan
+# 🍳 Resepku - Website Kumpulan Resep Makanan
 
-**Resepku** adalah platform web berbasis **Golang** yang menyajikan berbagai inspirasi masakan rumahan. Proyek ini dibangun dengan menerapkan teknik **pemrograman terstruktur** untuk memastikan kode yang bersih dan mudah dikelola.
+Resepku merupakan website kumpulan resep makanan yang dibangun menggunakan bahasa **Golang** dengan menerapkan teknik **pemrograman terstruktur**. Website ini dirancang untuk memudahkan pengguna menemukan inspirasi masakan rumahan ala ibu Indonesia dengan performa yang ringan dan efisien.
 
-## 🚀 Fitur Utama
-- **Cari Resep:** Temukan inspirasi masakan berdasarkan bahan yang lo punya.
-- **Simpan Favorit:** Simpan resep pilihan lo ke daftar favorit (Local Storage).
-- **Manajemen Resep:** Tambah dan kelola resep masakan sendiri.
-- **Tampilan Responsif:** Nyaman diakses lewat laptop maupun HP.
+## 🚀 Deskripsi Proyek
+Proyek ini merupakan bagian dari eksplorasi pengembangan web backend menggunakan Go. Fokus utama dari proyek ini adalah implementasi logika server-side yang rapi, pengelolaan rute (routing), dan integrasi frontend statis yang responsif.
+
+## ✨ Fitur Utama
+- **Pencarian Resep:** Mencari resep berdasarkan bahan masakan melalui kolom pencarian di halaman utama.
+- **Daftar Favorit:** Pengguna dapat menyimpan resep yang disukai ke daftar favorit (menggunakan LocalStorage).
+- **Tambah Resep:** Fitur navigasi untuk menambahkan resep baru ke dalam sistem.
+- **Navigasi Cepat:** Fitur smooth scroll pada tombol cari untuk mempermudah pengalaman pengguna.
+- **Pagination:** Pengaturan halaman resep agar tampilan tetap rapi.
 
 ## 🛠️ Tech Stack
-- **Backend:** Go (Golang)
-- **Frontend:** HTML5, CSS3 (Montserrat Font)
-- **Database:**
+- **Backend:** [Go (Golang)](https://go.dev/)
+- **Frontend:** HTML5 & CSS3 (Montserrat Font)
+- **Data Persistence:** Pemrograman terstruktur dengan template bawaan Go (html/template).
 
-## 💻 Cara Menjalankan Lokal
-1. Clone repository:
-   ```bash
-   git clone [https://github.com/username-lo/resepku.git](https://github.com/username-lo/resepku.git)
+## 💻 Cara Menjalankan secara Lokal
+1. Pastikan sudah install Go.
+2. Clone repository: \`git clone https://github.com/USERNAME_LO/resepku.git\`
+3. Jalankan: \`go run main.go\`
+4. Akses: \`http://localhost:8080\`
+
+---
+**Author:** Raihan Faisal Yusuf   
+*Mahasiswa Sistem Informasi - Universitas Gunadarma*
+EOF
