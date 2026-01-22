@@ -3,14 +3,15 @@ package main
 import (
 	"encoding/json"
 	"html/template"
-	"io" 
+	"io"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 )
 
-// Recipe: Blueprint data resep. Field-field ini yang bakal muncul di detail.html dan resep.json
+// Recipe
 type Recipe struct {
 	Title            string
 	Desc             string
@@ -24,20 +25,20 @@ type Recipe struct {
 	Langkah          string
 }
 
-// allRecipes: Database sementara. Isinya resep default yang muncul pertama kali sebelum user nambahin data
+// allRecipes
 var allRecipes = []Recipe{
 	{Title: "Keripik Kentang", Desc: "Renyah disetiap gigitan, gurihnya baluran bumbu. Keripik Kentang bikin nagih", Time: "20-30 Menit", Image: "Keripik_kentang.png"},
 	{Title: "Kentang Tumbuk", Desc: "Selembut awan, semewah mentega. Rasakan kehangatan Mashed Potato yang meleleh di lidah.", Time: "20-30 Menit", Image: "Kentang_tumbuk.png"},
 	{Title: "Kentang Balado", Desc: "Warnanya yang merah menggoda adalah janji rasa yang luar biasa. Kentang Balado yang tak hanya cantik, tapi juga lezat!", Time: "1 Jam +", Image: "Kentang_balado.png"},
 	{Title: "Telur Dadar Padang", Desc: "Bukan telur dadar biasa. Rasakan kekayaan bumbu yang terkunci di setiap lapisan telur dadar setebal bantal ini.", Time: "20-30 Menit", Image: "Telur_dadar_padang.png"},
-	{Title: "Telur Balado", Desc: "Rasa klasik yang selalu dicintai. Telur Balado kami dibuat dengan bumbu otentik dan cinta, menghasilkan kelezatan yang tiada duanya.", Time: "1 Jam +", Image: "Telur_Balado.png"},
+	{Title: "Telur Balado", Desc: "Rasa klasik yang selalu dicintai. Telur Balado kami dibuat dengan bumbu otentik dan cinta.", Time: "1 Jam +", Image: "Telur_Balado.png"},
 	{Title: "Omelete Mie", Desc: "Kreasi paling jenius dari anak kos. Omelet Mie ini membuktikan bahwa makanan enak tidak harus rumit!", Time: "15-20 Menit", Image: "Omelet_mie.png"},
-	{Title: "Nasi Goreng Seafood", Desc: "Rasa yang medok dan aroma yang menggoda! Nasi Goreng Seafood yang dimasak dengan bumbu rahasia dan teknik api yang sempurna.", Time: "30-40 Menit", Image: "Nasigoreng_Seafood.png"},
+	{Title: "Nasi Goreng Seafood", Desc: "Rasa yang medok dan aroma yang menggoda! Nasi Goreng Seafood dengan bumbu rahasia.", Time: "30-40 Menit", Image: "Nasigoreng_Seafood.png"},
 	{Title: "Nasi Goreng", Desc: "Comfort food sejati. Nikmati kehangatan dan kelezatan yang tiada tara dari seporsi Nasi Goreng.", Time: "20-30 Menit", Image: "Nasi_goreng.png"},
-	{Title: "Nasi Goreng Cabe Hijau", Desc: "Pedasnya cabai hijau lebih light namun lebih aromatik. Inilah nasi goreng favorit bagi yang mencari sensasi pedas yang unik.", Time: "15-20 Menit", Image: "Nasigoreng_cabeijo.png"},
+	{Title: "Nasi Goreng Cabe Hijau", Desc: "Pedasnya cabai hijau lebih light namun lebih aromatik.", Time: "15-20 Menit", Image: "Nasigoreng_cabeijo.png"},
 }
 
-// getCombinedRecipes: Menggabungkan data hardcoded (allRecipes) dengan data dinamis dari resep.json
+// getCombinedRecipes: Gabung data statis & data dari resep.json
 func getCombinedRecipes() []Recipe {
 	file, err := os.ReadFile("resep.json")
 	if err != nil || len(file) == 0 {
@@ -48,7 +49,7 @@ func getCombinedRecipes() []Recipe {
 	return append(allRecipes, fromFile...)
 }
 
-// saveRecipeToFile: Logic buat nyimpen resep baru ke file resep.json supaya data gak ilang pas server mati
+// saveRecipeToFile: Simpan resep baru ke JSON
 func saveRecipeToFile(r Recipe) {
 	file, err := os.ReadFile("resep.json")
 	var saved []Recipe
@@ -67,11 +68,11 @@ func saveRecipeToFile(r Recipe) {
 }
 
 func main() {
-	// http.FileServer: Biar browser bisa manggil gambar/CSS dari folder 'static'
+	// Menangani file statis (CSS/Gambar)
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	// Route Utama (/): Nampilin daftar resep, search, dan pagination (halaman 1, 2, 3)
+	// Route Utama (/)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		search := r.URL.Query().Get("search")
 		pageStr := r.URL.Query().Get("page")
@@ -82,7 +83,7 @@ func main() {
 				page = p
 			}
 		}
-		
+
 		combined := getCombinedRecipes()
 		var filtered []Recipe
 		for _, res := range combined {
@@ -90,7 +91,7 @@ func main() {
 				filtered = append(filtered, res)
 			}
 		}
-		
+
 		limit := 9
 		total := len(filtered)
 		offset := (page - 1) * limit
@@ -102,7 +103,7 @@ func main() {
 			}
 			paginated = filtered[offset:end]
 		}
-		
+
 		data := struct {
 			Recipes     []Recipe
 			CurrentPage int
@@ -116,7 +117,7 @@ func main() {
 		tmpl.Execute(w, data)
 	})
 
-	// Route Detail (/recipe): Nyari satu resep spesifik pake parameter 'title'
+	// Route Detail (/recipe)
 	http.HandleFunc("/recipe", func(w http.ResponseWriter, r *http.Request) {
 		title := r.URL.Query().Get("title")
 		combined := getCombinedRecipes()
@@ -135,20 +136,20 @@ func main() {
 		}
 		tmpl, err := template.ParseFiles("detail.html")
 		if err != nil {
-			http.Error(w, "File detail.html gak ketemu bray!", http.StatusNotFound)
+			http.Error(w, "File detail.html gak ketemu!", http.StatusNotFound)
 			return
 		}
 		tmpl.Execute(w, selectedRecipe)
 	})
 
-	// Route Tambah (/add-recipe): Nampilin form (GET) dan nerima inputan resep baru (POST)
+	// Route Tambah (/add-recipe)
 	http.HandleFunc("/add-recipe", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
 			tmpl, _ := template.ParseFiles("add.html")
 			tmpl.Execute(w, nil)
 			return
 		}
-		
+
 		file, handler, err := r.FormFile("image")
 		imageName := "default.png"
 		if err == nil {
@@ -158,7 +159,7 @@ func main() {
 			defer f.Close()
 			io.Copy(f, file)
 		}
-		
+
 		newR := Recipe{
 			Title:            r.FormValue("title"),
 			Desc:             r.FormValue("desc"),
@@ -175,7 +176,7 @@ func main() {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	})
 
-	// Route Edit: Fitur moderasi admin pake 'key'
+	// Route Moderasi Edit
 	http.HandleFunc("/moderasi/edit", func(w http.ResponseWriter, r *http.Request) {
 		key := r.URL.Query().Get("key")
 		title := r.URL.Query().Get("title")
@@ -183,7 +184,7 @@ func main() {
 			http.Error(w, "Akses ditolak bray!", http.StatusUnauthorized)
 			return
 		}
-		
+
 		combined := getCombinedRecipes()
 		var selected Recipe
 		found := false
@@ -194,7 +195,7 @@ func main() {
 				break
 			}
 		}
-		
+
 		if r.Method == "GET" {
 			if !found {
 				http.NotFound(w, r)
@@ -204,7 +205,7 @@ func main() {
 			tmpl.Execute(w, selected)
 			return
 		}
-		
+
 		if r.Method == "POST" {
 			fileContent, _ := os.ReadFile("resep.json")
 			var saved []Recipe
@@ -241,42 +242,30 @@ func main() {
 		}
 	})
 
-	// Route Simpan Makanan: Nampilin halaman 'simpan.html'
+	// Route Simpan Makanan
 	http.HandleFunc("/Simpan-Makanan", func(w http.ResponseWriter, r *http.Request) {
-		tmpl, err := template.ParseFiles("simpan.html")
-		if err != nil {
-			http.Error(w, "File simpan.html gak ketemu bray!", http.StatusNotFound)
-			return
-		}
+		tmpl, _ := template.ParseFiles("simpan.html")
 		tmpl.Execute(w, nil)
 	})
 
-	// Route Favorit Resepku: Nampilin halaman 'favorit.html'
+	// Route Favorit
 	http.HandleFunc("/favorit", func(w http.ResponseWriter, r *http.Request) {
-		tmpl, err := template.ParseFiles("favorit.html")
-		if err != nil {
-			http.Error(w, "File favorit.html gak ketemu bray!", http.StatusNotFound)
-			return
-		}
+		tmpl, _ := template.ParseFiles("favorit.html")
 		tmpl.Execute(w, nil)
 	})
 
-	// Route Detail Simpan (Baru): Detail buat resep favorit dari browser
+	// Route Detail Simpan
 	http.HandleFunc("/detailsimpan", func(w http.ResponseWriter, r *http.Request) {
-		tmpl, err := template.ParseFiles("detailsimpan.html")
-		if err != nil {
-			http.Error(w, "File detailsimpan.html gak ketemu bray!", http.StatusNotFound)
-			return
-		}
+		tmpl, _ := template.ParseFiles("detailsimpan.html")
 		tmpl.Execute(w, nil)
 	})
 
-	// Route Delete: Hapus resep dari file JSON
+	// Route Delete
 	http.HandleFunc("/moderasi/delete", func(w http.ResponseWriter, r *http.Request) {
 		key := r.URL.Query().Get("key")
 		title := r.URL.Query().Get("title")
 		if key != "kuncirahasia77" {
-			http.Error(w, "Akses ditolak bray!", http.StatusUnauthorized)
+			http.Error(w, "Akses ditolak!", http.StatusUnauthorized)
 			return
 		}
 		file, _ := os.ReadFile("resep.json")
@@ -293,6 +282,16 @@ func main() {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	})
 
-	println("Server running: http://localhost:8080")
-	http.ListenAndServe(":8080", nil)
+	// DETEKSI PORT DARI SYSTEM 
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Println("Server running on port:", port)
+	
+	// Jalankan ListenAndServe dengan port dinamis
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		log.Fatal(err)
+	}
 }
