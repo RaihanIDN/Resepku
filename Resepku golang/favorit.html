@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resep Favorit - Resepku</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans+Condensed:wght@300;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        /* Biar grid rapi dan konsisten bray */
+        .recipe-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+            padding: 50px 80px;
+            min-height: 600px;
+        }
+        /* Hover efek seukuran index bray */
+        .recipe-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <div class="logo">Resepku<br></div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/add-recipe" class="btn-tambah-nav">Tambah Resep</a>
+            <a href="/Simpan-Makanan">Simpan Makanan</a>
+            <a href="/favorit" class="active-home">Favorit Resepku</a>
+            <div id="navSearchBtn" class="btn-cari-nav" onclick="window.location.href='/'">Cari</div>
+        </div>
+    </div>
+
+    <div style="padding: 120px 80px 0 80px; text-align: center;">
+        <h1 style="font-size: 32px; color: #1A1A1A;">⭐ Koleksi Resep Favorit Anda</h1>
+        <p style="color: #666; margin-top: 10px;">Daftar masakan yang udah Anda simpan buat dimasak nanti.</p>
+    </div>
+
+    <div id="favoritGrid" class="recipe-grid"></div>
+
+    <div class="footer">
+        <div class="footer-content">
+            <div class="contact">
+                <p>📧 cs.resepku@gmail.com</p>
+                <p>📞 0881-3577-257</p>
+            </div>
+            <div class="footer-logo">
+                <h2>Resepku</h2>
+                <span>Bagian dari perjalanan memasak Anda</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const grid = document.getElementById('favoritGrid');
+            const favorites = JSON.parse(localStorage.getItem('myFavorites')) || [];
+
+            if (favorites.length === 0) {
+                grid.innerHTML = `
+                    <div style="grid-column: span 3; text-align: center; padding: 50px;">
+                        <p style="font-size: 18px; color: #888;">Belum ada resep yang Anda simpen. <br> 
+                        <a href="/" style="color: #8BC34A; text-decoration: none; font-weight: bold;">Cari resep dulu yuk!</a></p>
+                    </div>
+                `;
+                return;
+            }
+
+            favorites.forEach((resep) => {
+                // Bungkus kartu pake link ke detailsimpan.html bray
+                grid.innerHTML += `
+                    <a href="/detailsimpan?title=${encodeURIComponent(resep.title)}" style="text-decoration: none; color: inherit;">
+                        <div class="recipe-card">
+                            <img src="/static/${resep.img}" alt="${resep.title}">
+                            <div class="card-content">
+                                <h3>${resep.title}</h3>
+                                <p>${resep.desc}</p>
+                                <div class="time-tag">Waktu: ${resep.time}</div>
+                                <button class="btn-save-fav" style="background-color: #ff5252; color: white; border: none; margin-top: 15px;" 
+                                    onclick="event.preventDefault(); removeFav('${resep.title}')">🗑️ Hapus</button>
+                            </div>
+                        </div>
+                    </a>
+                `;
+            });
+        });
+
+        function removeFav(title) {
+            let favorites = JSON.parse(localStorage.getItem('myFavorites')) || [];
+            favorites = favorites.filter(r => r.title !== title);
+            localStorage.setItem('myFavorites', JSON.stringify(favorites));
+            location.reload(); 
+        }
+    </script>
+</body>
+</html>

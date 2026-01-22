@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detail Resep - Resepku</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="nav-bar">
+        <div class="logo">Resepku</div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/Simpan-Makanan">Simpan Makanan</a>
+            <a href="/favorit">Favorit Resepku</a>
+        </div>
+    </div>
+
+    <div style="padding: 120px 80px; max-width: 900px; margin: auto;">
+        <div id="detailContent">
+            </div>
+        <br>
+        <a href="/favorit" class="btn-cari-nav" style="text-decoration: none;">← Kembali ke Favorit</a>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const params = new URLSearchParams(window.location.search);
+            const title = params.get('title');
+            const favorites = JSON.parse(localStorage.getItem('myFavorites')) || [];
+            
+            const resep = favorites.find(r => r.title === title);
+
+            if (resep) {
+                document.getElementById('detailContent').innerHTML = `
+                    <h1 style="font-size: 36px; margin-bottom: 20px;">${resep.title}</h1>
+                    <img src="/static/${resep.img}" style="width: 100%; border-radius: 15px; margin-bottom: 20px;">
+                    <div class="time-tag" style="font-size: 18px; margin-bottom: 20px;">Estimasi Waktu: ${resep.time}</div>
+                    <h3>Deskripsi</h3>
+                    <p style="font-size: 18px; line-height: 1.6; color: #444;">${resep.desc}</p>
+                    <hr style="margin: 30px 0; border: 1px solid #eee;">
+                    <p><i>Catatan: Resep ini disimpan di koleksi favorit Anda.</i></p>
+                `;
+            } else {
+                document.getElementById('detailContent').innerHTML = "<h1>Resep gak ketemu bray!</h1>";
+            }
+        });
+    </script>
+</body>
+</html>

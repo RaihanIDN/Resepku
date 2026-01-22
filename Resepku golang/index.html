@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kunci Bahan - Resepku</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans+Condensed:wght@300;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        /* Paksa style pagination kotak di sini biar gak biru standar bray */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin: 50px 0;
+            width: 100%;
+        }
+
+        .pagination a {
+            text-decoration: none !important;
+            color: #1A1A1A !important;
+            background-color: white !important;
+            padding: 10px 16px !important;
+            border: 1px solid #ddd !important;
+            font-weight: 800 !important;
+            border-radius: 4px;
+            transition: 0.3s;
+            display: inline-block;
+        }
+
+        .pagination a.active {
+            background-color: #FFEB3B !important; 
+            border-color: #FFEB3B !important;
+        }
+
+        .pagination a:hover:not(.active) {
+            background-color: #f0f0f0 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <div class="logo">Resepku<br></div>
+        <div class="nav-links">
+            <a href="/" class="active-home">Home</a>
+            <a href="/add-recipe" class="btn-tambah-nav">Tambah Resep</a>
+            <a href="/Simpan-Makanan">Simpan Makanan</a>
+            <a href="/favorit">Favorit Resepku</a>
+            <div id="navSearchBtn" class="btn-cari-nav">Cari</div>
+        </div>
+    </div>
+
+    <div class="hero">
+        <h1 class="hero-title">Resep Makanan</h1>
+        
+        <form action="/" method="GET" class="search-container">
+            <input type="text" id="heroSearchInput" name="search" class="search-input" placeholder="Masukkan Bahan Masak" value="{{.Search}}">
+            <button type="submit" class="btn-cari-hero">Cari</button>
+        </form>
+        
+        <div class="hero-meta">
+            <p class="inspiration-text">Temukan Inspirasi masakan rumahan ala ibu indonesia</p>
+            
+            {{if or (eq .CurrentPage 1) (eq .CurrentPage 0)}}
+            <p class="popular-text"><b>Bahan Populer:</b> Kentang, Telur, Nasi Goreng</p>
+            {{end}}
+        </div>
+    </div>
+
+    <div class="recipe-grid">
+        {{range .Recipes}} 
+        <a href="/recipe?title={{.Title}}" style="text-decoration: none; color: inherit; display: block;">
+            <div class="recipe-card">
+                <img src="/static/{{.Image}}" alt="{{.Title}}">
+                <div class="card-content">
+                    <h3>{{.Title}}</h3>
+                    <p>{{.Desc}}</p>
+                    <div class="time-tag">Waktu: {{.Time}}</div>
+                    <button class="btn-save-fav" onclick="event.stopPropagation(); event.preventDefault(); addToFav('{{.Title}}', '{{.Image}}', '{{.Desc}}', '{{.Time}}')">⭐ Favorit</button>
+                </div>
+            </div>
+        </a>
+        {{else}}
+        <p style="grid-column: span 3; text-align: center;">Resep tidak ditemukan.</p>
+        {{end}}
+    </div>
+
+    <div class="pagination">
+        <a href="/?page=1&search={{.Search}}" class="{{if or (eq .CurrentPage 1) (eq .CurrentPage 0)}}active{{end}}">1</a>
+        <a href="/?page=2&search={{.Search}}" class="{{if eq .CurrentPage 2}}active{{end}}">2</a>
+        <a href="/?page=3&search={{.Search}}" class="{{if eq .CurrentPage 3}}active{{end}}">3</a>
+    </div>
+
+    <div class="footer">
+        <div class="footer-content">
+            <div class="contact">
+                <p>📧 cs.resepku@gmail.com</p>
+                <p>📞 0881-3577-257</p>
+            </div>
+            <div class="footer-logo">
+                <h2>Resepku</h2>
+                <span>Bagian dari perjalanan memasak Anda</span>
+            </div>
+        </div>
+    </div>
+
+<script>
+    function addToFav(title, img, desc, time) {
+        let favorites = JSON.parse(localStorage.getItem('myFavorites')) || [];
+        if (favorites.find(r => r.title === title)) {
+            alert("Resep ini udah ada di daftar favorit lo!");
+            return;
+        }
+        favorites.push({ title, img, desc, time });
+        localStorage.setItem('myFavorites', JSON.stringify(favorites));
+        alert("Resep berhasil disimpan ke daftar Favorit!");
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const navBtn = document.getElementById('navSearchBtn');
+        const heroInput = document.getElementById('heroSearchInput');
+        if (navBtn && heroInput) {
+            navBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                heroInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => { heroInput.focus(); }, 800);
+            });
+        }
+    });
+</script>
+</body>
+</html>
