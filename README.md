@@ -2,6 +2,9 @@
 
 Resepku merupakan website kumpulan resep makanan yang dibangun menggunakan bahasa **Golang** dengan menerapkan teknik **pemrograman terstruktur**. Website ini dirancang untuk memudahkan pengguna menemukan inspirasi masakan rumahan ala ibu Indonesia dengan performa yang ringan dan efisien.
 
+## 🔗 Live Demo
+Cek websitenya di sini bray: [https://compulsory-marlyn-raihanid-327091a2.koyeb.app/](https://compulsory-marlyn-raihanid-327091a2.koyeb.app/)
+
 ## 🚀 Deskripsi Proyek
 Proyek ini merupakan bagian dari eksplorasi pengembangan web backend menggunakan Go. Fokus utama dari proyek ini adalah implementasi logika server-side yang rapi, pengelolaan rute (routing), dan integrasi frontend statis yang responsif.
 
