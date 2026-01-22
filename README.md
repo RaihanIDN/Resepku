@@ -26,4 +26,3 @@ Proyek ini merupakan bagian dari eksplorasi pengembangan web backend menggunakan
 ---
 **Author:** Raihan Faisal Yusuf   
 *Mahasiswa Sistem Informasi - Universitas Gunadarma*
-EOF
