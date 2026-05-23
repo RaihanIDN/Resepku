@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"html/template"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -19,7 +18,7 @@ type Recipe struct {
 	Title            string
 	Desc             string
 	Time             string
-	Image            string
+	Image            string // Sekarang akan menyimpan URL teks penuh atau nama file bawaan
 	SimpanDalam      string
 	MasaSimpan       string
 	TempatSimpan     string
@@ -34,7 +33,6 @@ var db *sql.DB
 // Fungsi inisialisasi koneksi ke Supabase Cloud
 func initDatabase() {
 	var err error
-	// Membaca string koneksi dari environment variable sistem
 	connStr := os.Getenv("DATABASE_URL")
 	if connStr == "" {
 		log.Fatal("Error: DATABASE_URL tidak ditemukan di environment variables ataupun file .env!")
@@ -45,7 +43,6 @@ func initDatabase() {
 		log.Fatal("Gagal membuka gerbang koneksi database:", err)
 	}
 
-	// Cek apakah database benar-benar merespon
 	err = db.Ping()
 	if err != nil {
 		log.Fatal("Koneksi gagal! Server Supabase tidak merespon bray:", err)
@@ -56,7 +53,6 @@ func initDatabase() {
 // Mengambil seluruh data resep dari database Supabase
 func getRecipesFromDB() []Recipe {
 	var recipes []Recipe
-	// Menggunakan COALESCE agar jika ada kolom bernilai NULL di DB, dibaca sebagai string kosong "" oleh Go
 	query := `SELECT title, description, time_estimation, image_url, 
 	          coalesce(simpan_dalam, ''), coalesce(masa_simpan, ''), coalesce(tempat_simpan, ''), 
 	          coalesce(kualitas_maksimal, ''), coalesce(bahan, ''), coalesce(langkah, '') 
@@ -90,14 +86,12 @@ func saveRecipeToDB(r Recipe) error {
 }
 
 func main() {
-	// Memuat file .env jika ada (hanya berjalan untuk pengujian lokal di laptop)
 	_ = godotenv.Load()
 
-	// Jalankan inisialisasi koneksi database saat server start
 	initDatabase()
 	defer db.Close()
 
-	// Menangani file aset statis (CSS/Gambar)
+	// Menangani file aset statis bawaan hasil download zip di Docker
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
@@ -179,21 +173,17 @@ func main() {
 			return
 		}
 
-		file, handler, err := r.FormFile("image")
-		imageName := "default.png"
-		if err == nil {
-			defer file.Close()
-			imageName = handler.Filename
-			f, _ := os.OpenFile("./static/"+imageName, os.O_WRONLY|os.O_CREATE, 0666)
-			defer f.Close()
-			io.Copy(f, file)
+		// BYPASS FILE UPLOAD LOCAL: Membaca input teks tautan URL gambar luar jika diisi
+		imageUrl := r.FormValue("image_url")
+		if imageUrl == "" {
+			imageUrl = "default.png" // Menggunakan aset bawaan di folder static jika kosong
 		}
 
 		newR := Recipe{
 			Title:            r.FormValue("title"),
 			Desc:             r.FormValue("desc"),
 			Time:             r.FormValue("time"),
-			Image:            imageName,
+			Image:            imageUrl,
 			SimpanDalam:      r.FormValue("simpan_dalam"),
 			MasaSimpan:       r.FormValue("masa_simpan"),
 			TempatSimpan:     r.FormValue("tempat_simpan"),
@@ -202,7 +192,7 @@ func main() {
 			Langkah:          r.FormValue("langkah"),
 		}
 
-		err = saveRecipeToDB(newR)
+		err := saveRecipeToDB(newR)
 		if err != nil {
 			log.Println("Gagal menyimpan resep baru ke DB:", err)
 		}
@@ -240,21 +230,15 @@ func main() {
 		}
 
 		if r.Method == "POST" {
-			imageName := r.FormValue("old_image")
-			file, handler, err := r.FormFile("image")
-			if err == nil {
-				defer file.Close()
-				imageName = handler.Filename
-				f, _ := os.OpenFile("./static/"+imageName, os.O_WRONLY|os.O_CREATE, 0666)
-				defer f.Close()
-				io.Copy(f, file)
+			imageUrl := r.FormValue("image_url")
+			if imageUrl == "" {
+				imageUrl = r.FormValue("old_image")
 			}
 
-			// Mengubah data langsung di baris database berdasarkan judul lama
 			query := `UPDATE recipes SET title=$1, description=$2, time_estimation=$3, image_url=$4, 
 			          simpan_dalam=$5, masa_simpan=$6, tempat_simpan=$7, kualitas_maksimal=$8, bahan=$9, langkah=$10 
 			          WHERE title=$11`
-			_, err = db.Exec(query, r.FormValue("title"), r.FormValue("desc"), r.FormValue("time"), imageName,
+			_, err := db.Exec(query, r.FormValue("title"), r.FormValue("desc"), r.FormValue("time"), imageUrl,
 				r.FormValue("simpan_dalam"), r.FormValue("masa_simpan"), r.FormValue("tempat_simpan"),
 				r.FormValue("kualitas_maksimal"), r.FormValue("bahan"), r.FormValue("langkah"), title)
 
@@ -293,7 +277,6 @@ func main() {
 			return
 		}
 
-		// Menghapus baris resep langsung dari database Supabase
 		query := "DELETE FROM recipes WHERE title = $1"
 		_, err := db.Exec(query, title)
 		if err != nil {
@@ -303,14 +286,13 @@ func main() {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	})
 
-	// DETEKSI PORT DINAMIS (Hugging Face mewajibkan port dibaca dari env sistem)
+	// DETEKSI PORT DINAMIS HUGGING FACE
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "7860" // Menggunakan port default Hugging Face Spaces jika kosong
+		port = "7860"
 	}
 
 	log.Println("Server running on port:", port)
-	
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal(err)
 	}
