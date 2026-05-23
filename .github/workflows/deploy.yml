@@ -21,16 +21,15 @@ jobs:
           git config --global user.email "raihanfaisalyusuf@gmail.com"
           git config --global user.name "RaihanIDN"
           
-          # 1. Hapus folder static secara fisik di runner
-          rm -rf static/
-          
-          # 2. Pindah ke branch baru (orphan) agar riwayat biner masa lalu hilang total
+          # 1. Pindah ke branch baru (orphan) agar terisolasi bray
           git checkout --orphan deploy-branch
           
-          # 3. Hapus README lama di runner (jika ada) biar tidak bentrok
+          # 2. PAKSA hapus folder static dan file README dari index Git secara brutal
+          git rm -rf static/ --ignore-unmatch || true
+          rm -rf static/
           rm -f README.md
           
-          # 4. Buat ulang file README.md dengan struktur metadata khusus Hugging Face Docker
+          # 3. Buat ulang file README.md dengan struktur metadata khusus Hugging Face Docker
           echo "---" > README.md
           echo "title: resepku-golang" >> README.md
           echo "emoji: 🍳" >> README.md
@@ -42,12 +41,12 @@ jobs:
           echo "" >> README.md
           echo "# Resepku - Fullstack Golang" >> README.md
           
-          # 5. Daftarkan semua berkas teks yang tersisa ke antrean git
-          git add main.go Dockerfile *.html README.md || git add .
+          # 4. Hanya tambahkan berkas teks murni ke antrean
+          git add main.go Dockerfile go.mod *.html README.md || git add .
           
-          # 6. Commit sebagai lembaran sejarah baru yang bersih
-          git commit -m "Deploy fresh artifact with absolute HF metadata"
+          # 5. Commit dengan sejarah baru yang 100% steril dari file .png
+          git commit -m "Deploy pure source files without any binary cache"
           
-          # 7. Paksa dorong (force push) untuk mereset isi Space di Hugging Face
+          # 6. Paksa dorong ke Hugging Face Space
           git remote add hf https://RaihanID:$HF_TOKEN@huggingface.co/spaces/RaihanID/resepku-golang || true
           git push --force hf deploy-branch:main
