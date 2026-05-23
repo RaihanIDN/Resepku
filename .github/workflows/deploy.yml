@@ -12,6 +12,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          lfs: true
 
       - name: Push to Hugging Face
         env:
@@ -19,5 +20,10 @@ jobs:
         run: |
           git config --global user.email "raihanfaisalyusuf@gmail.com"
           git config --global user.name "RaihanIDN"
+          
+          # Inisialisasi Git LFS untuk membungkus file gambar biner
+          git lfs install
+          git lfs track "static/*.png"
+          
           git remote add hf https://RaihanID:$HF_TOKEN@huggingface.co/spaces/RaihanID/resepku-golang
           git push --force hf main
