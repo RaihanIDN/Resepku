@@ -12,7 +12,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          lfs: true
 
       - name: Push to Hugging Face
         env:
@@ -21,9 +20,11 @@ jobs:
           git config --global user.email "raihanfaisalyusuf@gmail.com"
           git config --global user.name "RaihanIDN"
           
-          # Inisialisasi Git LFS untuk membungkus file gambar biner
-          git lfs install
-          git lfs track "static/*.png"
+          # Trik jitu: Hapus folder static secara lokal & commit sebelum push ke HF
+          git rm -rf static/ --cached || true
+          rm -rf static/
+          git add .
+          git commit -m "Remove binary files for Hugging Face bypass" || true
           
           git remote add hf https://RaihanID:$HF_TOKEN@huggingface.co/spaces/RaihanID/resepku-golang
           git push --force hf main
