@@ -8,7 +8,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      # Menggunakan token bawaan github agar hak akses clone dijamin 100% lancar
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -22,15 +21,18 @@ jobs:
           git config --global user.email "raihanfaisalyusuf@gmail.com"
           git config --global user.name "RaihanIDN"
           
-          # Hapus file biner dan cache pelacakan LFS lama secara paksa
-          git lfs untrack "static/*.png" --allow-empty || true
-          rm -f .gitattributes || true
+          # 1. Hapus folder static secara fisik di lingkungan runner
           rm -rf static/
           
-          # Commit perubahan agar history bersih dari file biner mentah
-          git add .
-          git commit -m "Chore: bypass binary and clear git config for HF" || true
+          # 2. Buat branch baru bernama 'deploy-branch' yang terisolasi
+          git checkout --orphan deploy-branch
           
-          # Paksa dorong (force push) ke Hugging Face Space
+          # 3. Masukkan semua file teks bersih yang tersisa (main.go, Dockerfile, html)
+          git add .
+          
+          # 4. Commit sebagai lembaran sejarah baru yang 100% bebas dari file biner (.png)
+          git commit -m "Deploy fresh artifact without binary traces"
+          
+          # 5. Paksa push branch bersih ini untuk menimpa branch 'main' di Hugging Face
           git remote add hf https://RaihanID:$HF_TOKEN@huggingface.co/spaces/RaihanID/resepku-golang || true
-          git push --force hf main
+          git push --force hf deploy-branch:main
