@@ -74,7 +74,7 @@
 
     <div class="container-add">
         <h1>🔧 Edit Resep: {{.Title}}</h1>
-        <form action="/moderasi/edit?key=kuncirahasia77&title={{.Title}}" method="POST" enctype="multipart/form-data">
+        <form action="/moderasi/edit?key=kuncirahasia77&title={{.Title}}" method="POST">
             
             <div class="form-group">
                 <label>Nama Masakan</label>
@@ -82,9 +82,10 @@
             </div>
 
             <div class="form-group">
-                <label>Foto Masakan (Biarkan kosong jika tidak ingin ganti)</label>
-                <input type="file" name="image" accept="image/*">
-                <small style="margin-top:5px; color:#888;">File saat ini: {{.Image}}</small>
+                <label>Link URL Foto Masakan Baru</label>
+                <input type="text" name="image_url" placeholder="Masukkan link gambar baru (Kosongkan jika tidak ingin ganti)">
+                <input type="hidden" name="old_image" value="{{.Image}}">
+                <small style="margin-top:5px; color:#888; word-break: break-all;">Tautan/Aset saat ini: {{.Image}}</small>
             </div>
 
             <div class="form-group">
