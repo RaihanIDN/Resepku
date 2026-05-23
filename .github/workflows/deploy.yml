@@ -21,18 +21,31 @@ jobs:
           git config --global user.email "raihanfaisalyusuf@gmail.com"
           git config --global user.name "RaihanIDN"
           
-          # 1. Hapus folder static secara fisik di lingkungan runner
+          # 1. Hapus folder static secara fisik bray
           rm -rf static/
           
-          # 2. Buat branch baru bernama 'deploy-branch' yang terisolasi
+          # 2. Pindah ke branch bersih (orphan)
           git checkout --orphan deploy-branch
           
-          # 3. Masukkan semua file teks bersih yang tersisa (main.go, Dockerfile, html)
+          # 3. PAKSA BUAT ULANG README.md yang valid di baris paling atas khusus untuk Hugging Face
+          cat << 'EOF' > README.md
+---
+title: resepku-golang
+emoji: 🍳
+colorFrom: green
+colorTo: lime
+sdk: docker
+pinned: false
+---
+
+# Resepku - Fullstack Golang & Supabase
+Aplikasi portofolio manajemen resep makanan menggunakan bahasa pemrograman Golang dan database Supabase.
+EOF
+
+          # 4. Ambil semua berkas (main.go, Dockerfile, templates, dan README.md baru)
           git add .
+          git commit -m "Deploy fresh artifact with correct HF metadata"
           
-          # 4. Commit sebagai lembaran sejarah baru yang 100% bebas dari file biner (.png)
-          git commit -m "Deploy fresh artifact without binary traces"
-          
-          # 5. Paksa push branch bersih ini untuk menimpa branch 'main' di Hugging Face
+          # 5. Paksa push ke Hugging Face Space
           git remote add hf https://RaihanID:$HF_TOKEN@huggingface.co/spaces/RaihanID/resepku-golang || true
           git push --force hf deploy-branch:main
