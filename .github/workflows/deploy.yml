@@ -8,10 +8,12 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      # Menggunakan token bawaan github agar hak akses clone dijamin 100% lancar
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Mengambil seluruh history agar tidak memicu error 'shallow update'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - name: Push to Hugging Face
         env:
@@ -20,17 +22,15 @@ jobs:
           git config --global user.email "raihanfaisalyusuf@gmail.com"
           git config --global user.name "RaihanIDN"
           
-          # 1. Bersihkan jejak pelacakan LFS lama jika ada yang nyangkut di cache lokal
+          # Hapus file biner dan cache pelacakan LFS lama secara paksa
           git lfs untrack "static/*.png" --allow-empty || true
           rm -f .gitattributes || true
-          
-          # 2. Hapus file biner static secara fisik di runner
           rm -rf static/
           
-          # 3. Commit penghapusan aset biner ke dalam history Git yang sudah ada
+          # Commit perubahan agar history bersih dari file biner mentah
           git add .
-          git commit -m "Cleanup and purge binary files for HF sync" || true
+          git commit -m "Chore: bypass binary and clear git config for HF" || true
           
-          # 4. Paksa push (force) untuk menimpa history kotor di Hugging Face dengan history baru yang bersih
+          # Paksa dorong (force push) ke Hugging Face Space
           git remote add hf https://RaihanID:$HF_TOKEN@huggingface.co/spaces/RaihanID/resepku-golang || true
           git push --force hf main
