@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/json"
+	"database/sql"
 	"html/template"
 	"io"
 	"log"
@@ -9,9 +9,12 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/joho/godotenv" // Driver untuk membaca .env di lokal (opsional di prod)
+	_ "github.com/lib/pq"      // Driver PostgreSQL resmi untuk koneksi ke Supabase
 )
 
-// Recipe
+// Recipe struct disesuaikan dengan skema tabel database Supabase
 type Recipe struct {
 	Title            string
 	Desc             string
@@ -25,50 +28,76 @@ type Recipe struct {
 	Langkah          string
 }
 
-// allRecipes
-var allRecipes = []Recipe{
-	{Title: "Keripik Kentang", Desc: "Renyah disetiap gigitan, gurihnya baluran bumbu. Keripik Kentang bikin nagih", Time: "20-30 Menit", Image: "Keripik_kentang.png"},
-	{Title: "Kentang Tumbuk", Desc: "Selembut awan, semewah mentega. Rasakan kehangatan Mashed Potato yang meleleh di lidah.", Time: "20-30 Menit", Image: "Kentang_tumbuk.png"},
-	{Title: "Kentang Balado", Desc: "Warnanya yang merah menggoda adalah janji rasa yang luar biasa. Kentang Balado yang tak hanya cantik, tapi juga lezat!", Time: "1 Jam +", Image: "Kentang_balado.png"},
-	{Title: "Telur Dadar Padang", Desc: "Bukan telur dadar biasa. Rasakan kekayaan bumbu yang terkunci di setiap lapisan telur dadar setebal bantal ini.", Time: "20-30 Menit", Image: "Telur_dadar_padang.png"},
-	{Title: "Telur Balado", Desc: "Rasa klasik yang selalu dicintai. Telur Balado kami dibuat dengan bumbu otentik dan cinta.", Time: "1 Jam +", Image: "Telur_Balado.png"},
-	{Title: "Omelete Mie", Desc: "Kreasi paling jenius dari anak kos. Omelet Mie ini membuktikan bahwa makanan enak tidak harus rumit!", Time: "15-20 Menit", Image: "Omelet_mie.png"},
-	{Title: "Nasi Goreng Seafood", Desc: "Rasa yang medok dan aroma yang menggoda! Nasi Goreng Seafood dengan bumbu rahasia.", Time: "30-40 Menit", Image: "Nasigoreng_Seafood.png"},
-	{Title: "Nasi Goreng", Desc: "Comfort food sejati. Nikmati kehangatan dan kelezatan yang tiada tara dari seporsi Nasi Goreng.", Time: "20-30 Menit", Image: "Nasi_goreng.png"},
-	{Title: "Nasi Goreng Cabe Hijau", Desc: "Pedasnya cabai hijau lebih light namun lebih aromatik.", Time: "15-20 Menit", Image: "Nasigoreng_cabeijo.png"},
+// Instance database global
+var db *sql.DB
+
+// Fungsi inisialisasi koneksi ke Supabase Cloud
+func initDatabase() {
+	var err error
+	// Membaca string koneksi dari environment variable sistem
+	connStr := os.Getenv("DATABASE_URL")
+	if connStr == "" {
+		log.Fatal("Error: DATABASE_URL tidak ditemukan di environment variables ataupun file .env!")
+	}
+
+	db, err = sql.Open("postgres", connStr)
+	if err != nil {
+		log.Fatal("Gagal membuka gerbang koneksi database:", err)
+	}
+
+	// Cek apakah database benar-benar merespon
+	err = db.Ping()
+	if err != nil {
+		log.Fatal("Koneksi gagal! Server Supabase tidak merespon bray:", err)
+	}
+	log.Println("Berhasil terhubung ke database Supabase!")
 }
 
-// getCombinedRecipes: Gabung data statis & data dari resep.json
-func getCombinedRecipes() []Recipe {
-	file, err := os.ReadFile("resep.json")
-	if err != nil || len(file) == 0 {
-		return allRecipes
+// Mengambil seluruh data resep dari database Supabase
+func getRecipesFromDB() []Recipe {
+	var recipes []Recipe
+	// Menggunakan COALESCE agar jika ada kolom bernilai NULL di DB, dibaca sebagai string kosong "" oleh Go
+	query := `SELECT title, description, time_estimation, image_url, 
+	          coalesce(simpan_dalam, ''), coalesce(masa_simpan, ''), coalesce(tempat_simpan, ''), 
+	          coalesce(kualitas_maksimal, ''), coalesce(bahan, ''), coalesce(langkah, '') 
+	          FROM recipes ORDER BY created_at DESC`
+
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Println("Gagal mengambil data dari database:", err)
+		return recipes
 	}
-	var fromFile []Recipe
-	json.Unmarshal(file, &fromFile)
-	return append(allRecipes, fromFile...)
+	defer rows.Close()
+
+	for rows.Next() {
+		var r Recipe
+		err := rows.Scan(&r.Title, &r.Desc, &r.Time, &r.Image, &r.SimpanDalam, &r.MasaSimpan, &r.TempatSimpan, &r.KualitasMaksimal, &r.Bahan, &r.Langkah)
+		if err != nil {
+			log.Println("Gagal membaca struktur baris data:", err)
+			continue
+		}
+		recipes = append(recipes, r)
+	}
+	return recipes
 }
 
-// saveRecipeToFile: Simpan resep baru ke JSON
-func saveRecipeToFile(r Recipe) {
-	file, err := os.ReadFile("resep.json")
-	var saved []Recipe
-
-	if err == nil && len(file) > 0 {
-		json.Unmarshal(file, &saved)
-	}
-
-	if saved == nil {
-		saved = []Recipe{}
-	}
-
-	saved = append(saved, r)
-	data, _ := json.MarshalIndent(saved, "", "  ")
-	_ = os.WriteFile("resep.json", data, 0644)
+// Menyimpan entri resep baru ke database Supabase
+func saveRecipeToDB(r Recipe) error {
+	query := `INSERT INTO recipes (title, description, time_estimation, image_url, simpan_dalam, masa_simpan, tempat_simpan, kualitas_maksimal, bahan, langkah) 
+	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+	_, err := db.Exec(query, r.Title, r.Desc, r.Time, r.Image, r.SimpanDalam, r.MasaSimpan, r.TempatSimpan, r.KualitasMaksimal, r.Bahan, r.Langkah)
+	return err
 }
 
 func main() {
-	// Menangani file statis (CSS/Gambar)
+	// Memuat file .env jika ada (hanya berjalan untuk pengujian lokal di laptop)
+	_ = godotenv.Load()
+
+	// Jalankan inisialisasi koneksi database saat server start
+	initDatabase()
+	defer db.Close()
+
+	// Menangani file aset statis (CSS/Gambar)
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
@@ -84,7 +113,7 @@ func main() {
 			}
 		}
 
-		combined := getCombinedRecipes()
+		combined := getRecipesFromDB()
 		var filtered []Recipe
 		for _, res := range combined {
 			if search == "" || strings.Contains(strings.ToLower(res.Title), strings.ToLower(search)) {
@@ -120,7 +149,7 @@ func main() {
 	// Route Detail (/recipe)
 	http.HandleFunc("/recipe", func(w http.ResponseWriter, r *http.Request) {
 		title := r.URL.Query().Get("title")
-		combined := getCombinedRecipes()
+		combined := getRecipesFromDB()
 		var selectedRecipe Recipe
 		found := false
 		for _, res := range combined {
@@ -172,7 +201,11 @@ func main() {
 			Bahan:            r.FormValue("bahan"),
 			Langkah:          r.FormValue("langkah"),
 		}
-		saveRecipeToFile(newR)
+
+		err = saveRecipeToDB(newR)
+		if err != nil {
+			log.Println("Gagal menyimpan resep baru ke DB:", err)
+		}
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	})
 
@@ -185,7 +218,7 @@ func main() {
 			return
 		}
 
-		combined := getCombinedRecipes()
+		combined := getRecipesFromDB()
 		var selected Recipe
 		found := false
 		for _, res := range combined {
@@ -207,9 +240,6 @@ func main() {
 		}
 
 		if r.Method == "POST" {
-			fileContent, _ := os.ReadFile("resep.json")
-			var saved []Recipe
-			json.Unmarshal(fileContent, &saved)
 			imageName := r.FormValue("old_image")
 			file, handler, err := r.FormFile("image")
 			if err == nil {
@@ -219,25 +249,19 @@ func main() {
 				defer f.Close()
 				io.Copy(f, file)
 			}
-			for i, v := range saved {
-				if v.Title == title {
-					saved[i] = Recipe{
-						Title:            r.FormValue("title"),
-						Desc:             r.FormValue("desc"),
-						Time:             r.FormValue("time"),
-						Image:            imageName,
-						SimpanDalam:      r.FormValue("simpan_dalam"),
-						MasaSimpan:       r.FormValue("masa_simpan"),
-						TempatSimpan:     r.FormValue("tempat_simpan"),
-						KualitasMaksimal: r.FormValue("kualitas_maksimal"),
-						Bahan:            r.FormValue("bahan"),
-						Langkah:          r.FormValue("langkah"),
-					}
-					break
-				}
+
+			// Mengubah data langsung di baris database berdasarkan judul lama
+			query := `UPDATE recipes SET title=$1, description=$2, time_estimation=$3, image_url=$4, 
+			          simpan_dalam=$5, masa_simpan=$6, tempat_simpan=$7, kualitas_maksimal=$8, bahan=$9, langkah=$10 
+			          WHERE title=$11`
+			_, err = db.Exec(query, r.FormValue("title"), r.FormValue("desc"), r.FormValue("time"), imageName,
+				r.FormValue("simpan_dalam"), r.FormValue("masa_simpan"), r.FormValue("tempat_simpan"),
+				r.FormValue("kualitas_maksimal"), r.FormValue("bahan"), r.FormValue("langkah"), title)
+
+			if err != nil {
+				log.Println("Gagal memperbarui data resep di DB:", err)
 			}
-			data, _ := json.MarshalIndent(saved, "", "  ")
-			_ = os.WriteFile("resep.json", data, 0644)
+
 			http.Redirect(w, r, "/recipe?title="+r.FormValue("title"), http.StatusSeeOther)
 		}
 	})
@@ -268,29 +292,25 @@ func main() {
 			http.Error(w, "Akses ditolak!", http.StatusUnauthorized)
 			return
 		}
-		file, _ := os.ReadFile("resep.json")
-		var saved []Recipe
-		json.Unmarshal(file, &saved)
-		var updated []Recipe
-		for _, v := range saved {
-			if v.Title != title {
-				updated = append(updated, v)
-			}
+
+		// Menghapus baris resep langsung dari database Supabase
+		query := "DELETE FROM recipes WHERE title = $1"
+		_, err := db.Exec(query, title)
+		if err != nil {
+			log.Println("Gagal menghapus data resep dari DB:", err)
 		}
-		data, _ := json.MarshalIndent(updated, "", "  ")
-		_ = os.WriteFile("resep.json", data, 0644)
+
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	})
 
-	// DETEKSI PORT DARI SYSTEM 
+	// DETEKSI PORT DINAMIS (Hugging Face mewajibkan port dibaca dari env sistem)
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "7860" // Menggunakan port default Hugging Face Spaces jika kosong
 	}
 
 	log.Println("Server running on port:", port)
 	
-	// Jalankan ListenAndServe dengan port dinamis
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal(err)
 	}
