@@ -10,21 +10,27 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Push to Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
+          # 1. Hapus folder static dan folder .github bawaan agar bersih total
+          rm -rf static/
+          rm -rf .github/
+          
+          # 2. Inisialisasi Git baru dari nol (menghapus history biner lama)
+          git init
           git config --global user.email "raihanfaisalyusuf@gmail.com"
           git config --global user.name "RaihanIDN"
           
-          # Trik jitu: Hapus folder static secara lokal & commit sebelum push ke HF
-          git rm -rf static/ --cached || true
-          rm -rf static/
-          git add .
-          git commit -m "Remove binary files for Hugging Face bypass" || true
+          # 3. Paksa nama branch utamanya menjadi 'main' (biar singkron sama Hugging Face)
+          git branch -M main
           
+          # 4. Ambil semua file bersih yang tersisa (main.go, Dockerfile, html)
+          git add .
+          git commit -m "Fresh deploy without binary history"
+          
+          # 5. Paksa push ke Hugging Face
           git remote add hf https://RaihanID:$HF_TOKEN@huggingface.co/spaces/RaihanID/resepku-golang
           git push --force hf main
