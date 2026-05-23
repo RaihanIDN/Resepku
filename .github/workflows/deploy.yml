@@ -21,31 +21,33 @@ jobs:
           git config --global user.email "raihanfaisalyusuf@gmail.com"
           git config --global user.name "RaihanIDN"
           
-          # 1. Hapus folder static secara fisik bray
+          # 1. Hapus folder static secara fisik di runner
           rm -rf static/
           
-          # 2. Pindah ke branch bersih (orphan)
+          # 2. Pindah ke branch baru (orphan) agar riwayat biner masa lalu hilang total
           git checkout --orphan deploy-branch
           
-          # 3. PAKSA BUAT ULANG README.md yang valid di baris paling atas khusus untuk Hugging Face
-          cat << 'EOF' > README.md
----
-title: resepku-golang
-emoji: 🍳
-colorFrom: green
-colorTo: lime
-sdk: docker
-pinned: false
----
-
-# Resepku - Fullstack Golang & Supabase
-Aplikasi portofolio manajemen resep makanan menggunakan bahasa pemrograman Golang dan database Supabase.
-EOF
-
-          # 4. Ambil semua berkas (main.go, Dockerfile, templates, dan README.md baru)
-          git add .
-          git commit -m "Deploy fresh artifact with correct HF metadata"
+          # 3. Hapus README lama di runner (jika ada) biar tidak bentrok
+          rm -f README.md
           
-          # 5. Paksa push ke Hugging Face Space
+          # 4. Buat ulang file README.md dengan struktur metadata khusus Hugging Face Docker
+          echo "---" > README.md
+          echo "title: resepku-golang" >> README.md
+          echo "emoji: 🍳" >> README.md
+          echo "colorFrom: green" >> README.md
+          echo "colorTo: lime" >> README.md
+          echo "sdk: docker" >> README.md
+          echo "pinned: false" >> README.md
+          echo "---" >> README.md
+          echo "" >> README.md
+          echo "# Resepku - Fullstack Golang" >> README.md
+          
+          # 5. Daftarkan semua berkas teks yang tersisa ke antrean git
+          git add main.go Dockerfile *.html README.md || git add .
+          
+          # 6. Commit sebagai lembaran sejarah baru yang bersih
+          git commit -m "Deploy fresh artifact with absolute HF metadata"
+          
+          # 7. Paksa dorong (force push) untuk mereset isi Space di Hugging Face
           git remote add hf https://RaihanID:$HF_TOKEN@huggingface.co/spaces/RaihanID/resepku-golang || true
           git push --force hf deploy-branch:main
