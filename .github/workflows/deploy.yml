@@ -15,8 +15,6 @@ jobs:
           lfs: true
 
       - name: Push to Hugging Face
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git remote add hf https://RaihanIDN:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/RaihanID/resepku-golang
+          git remote add hf https://RaihanID:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/RaihanID/resepku-golang
           git push --force hf main
