@@ -12,9 +12,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          lfs: true
 
       - name: Push to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git remote add hf https://RaihanID:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/RaihanID/resepku-golang
+          git config --global user.email "raihanfaisalyusuf@gmail.com"
+          git config --global user.name "RaihanIDN"
+          git remote add hf https://RaihanID:$HF_TOKEN@huggingface.co/spaces/RaihanID/resepku-golang
           git push --force hf main
