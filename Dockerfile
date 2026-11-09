@@ -3,32 +3,29 @@ FROM golang:1.21-alpine AS builder
 
 WORKDIR /app
 
-# Salin seluruh source code (termasuk go.mod dan main.go) TERLEBIH DAHULU
+# Salin seluruh file dari repositori
 COPY . .
 
-# Sekarang jalankan tidy agar bisa membaca main.go dan mengunduh package (godotenv & pq)
+# Rapihkan dependensi
 RUN go mod tidy
 
-# Build binary aplikasi Go
+# Build binary
 RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 
 # ================= STEP 2: RUNNER =================
 FROM alpine:latest
-
-# Tambahkan sertifikat keamanan standar
 RUN apk add --no-cache ca-certificates
 
 WORKDIR /app
 
-# Salin file binary utama yang sudah bersih dari tahap builder
+# Salin file binary
 COPY --from=builder /app/main .
 
-# Salin folder static dan file HTML template
+# Salin folder static dan HTML
 COPY --from=builder /app/static ./static
 COPY --from=builder /app/*.html ./
 
-# Ekspos port 8080
-EXPOSE 8080
+# Ekspos port wajib Hugging Face
+EXPOSE 7860
 
-# Eksekusi aplikasi
 CMD ["./main"]
