@@ -187,7 +187,7 @@ func main() {
 	// Port diset statis ke 8080 sesuai Dockerfile
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "7860"
 	}
 
 	log.Println("Server running on port:", port)
