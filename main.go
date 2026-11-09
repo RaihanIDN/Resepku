@@ -1,24 +1,20 @@
 package main
 
 import (
-	"database/sql"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
-
-	"github.com/joho/godotenv" // Driver untuk membaca .env di lokal (opsional di prod)
-	_ "github.com/lib/pq"      // Driver PostgreSQL resmi untuk koneksi ke Supabase
 )
 
-// Recipe struct disesuaikan dengan skema tabel database Supabase
+// Recipe struct
 type Recipe struct {
 	Title            string
 	Desc             string
 	Time             string
-	Image            string // Sekarang akan menyimpan URL teks penuh atau nama file bawaan
+	Image            string
 	SimpanDalam      string
 	MasaSimpan       string
 	TempatSimpan     string
@@ -27,71 +23,46 @@ type Recipe struct {
 	Langkah          string
 }
 
-// Instance database global
-var db *sql.DB
-
-// Fungsi inisialisasi koneksi ke Supabase Cloud
-func initDatabase() {
-	var err error
-	connStr := os.Getenv("DATABASE_URL")
-	if connStr == "" {
-		log.Fatal("Error: DATABASE_URL tidak ditemukan di environment variables ataupun file .env!")
-	}
-
-	db, err = sql.Open("postgres", connStr)
-	if err != nil {
-		log.Fatal("Gagal membuka gerbang koneksi database:", err)
-	}
-
-	err = db.Ping()
-	if err != nil {
-		log.Fatal("Koneksi gagal! Server Supabase tidak merespon bray:", err)
-	}
-	log.Println("Berhasil terhubung ke database Supabase!")
+// Data statis sebagai pengganti database agar aplikasi tetap berjalan
+var staticRecipes = []Recipe{
+	{
+		Title:            "Nasi Goreng Spesial",
+		Desc:             "Nasi goreng lezat dengan bumbu rahasia.",
+		Time:             "20 Menit",
+		Image:            "Nasi_goreng.png",
+		SimpanDalam:      "Suhu Ruang / Kulkas",
+		MasaSimpan:       "1 Hari",
+		TempatSimpan:     "Wadah tertutup",
+		KualitasMaksimal: "Langsung disantap",
+		Bahan:            "Nasi putih, Bawang merah, Bawang putih, Kecap, Telur",
+		Langkah:          "1. Haluskan bumbu. 2. Tumis bumbu hingga harum. 3. Masukkan nasi dan telur. 4. Aduk rata dan tambahkan kecap.",
+	},
+    {
+		Title:            "Telur Balado",
+		Desc:             "Telur rebus dengan sambal balado pedas manis.",
+		Time:             "30 Menit",
+		Image:            "Telur_Balado.png",
+		SimpanDalam:      "Suhu Ruang / Kulkas",
+		MasaSimpan:       "2 Hari",
+		TempatSimpan:     "Wadah tertutup rapat",
+		KualitasMaksimal: "Dihangatkan sebelum disantap",
+		Bahan:            "Telur ayam, Cabe merah, Tomat, Bawang merah, Bawang putih",
+		Langkah:          "1. Rebus telur lalu goreng sebentar. 2. Haluskan bumbu. 3. Tumis bumbu balado. 4. Masukkan telur dan masak hingga meresap.",
+	},
 }
 
-// Mengambil seluruh data resep dari database Supabase
-func getRecipesFromDB() []Recipe {
-	var recipes []Recipe
-	query := `SELECT title, description, time_estimation, image_url, 
-	          coalesce(simpan_dalam, ''), coalesce(masa_simpan, ''), coalesce(tempat_simpan, ''), 
-	          coalesce(kualitas_maksimal, ''), coalesce(bahan, ''), coalesce(langkah, '') 
-	          FROM recipes ORDER BY created_at DESC`
+// Data memori untuk menampung resep baru selama aplikasi berjalan
+var inMemoryRecipes []Recipe
 
-	rows, err := db.Query(query)
-	if err != nil {
-		log.Println("Gagal mengambil data dari database:", err)
-		return recipes
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var r Recipe
-		err := rows.Scan(&r.Title, &r.Desc, &r.Time, &r.Image, &r.SimpanDalam, &r.MasaSimpan, &r.TempatSimpan, &r.KualitasMaksimal, &r.Bahan, &r.Langkah)
-		if err != nil {
-			log.Println("Gagal membaca struktur baris data:", err)
-			continue
-		}
-		recipes = append(recipes, r)
-	}
-	return recipes
-}
-
-// Menyimpan entri resep baru ke database Supabase
-func saveRecipeToDB(r Recipe) error {
-	query := `INSERT INTO recipes (title, description, time_estimation, image_url, simpan_dalam, masa_simpan, tempat_simpan, kualitas_maksimal, bahan, langkah) 
-	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
-	_, err := db.Exec(query, r.Title, r.Desc, r.Time, r.Image, r.SimpanDalam, r.MasaSimpan, r.TempatSimpan, r.KualitasMaksimal, r.Bahan, r.Langkah)
-	return err
+func getRecipes() []Recipe {
+	var combined []Recipe
+	combined = append(combined, inMemoryRecipes...)
+	combined = append(combined, staticRecipes...)
+	return combined
 }
 
 func main() {
-	_ = godotenv.Load()
-
-	initDatabase()
-	defer db.Close()
-
-	// Menangani file aset statis bawaan hasil download zip di Docker
+	// Menangani file aset statis
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
@@ -107,7 +78,7 @@ func main() {
 			}
 		}
 
-		combined := getRecipesFromDB()
+		combined := getRecipes()
 		var filtered []Recipe
 		for _, res := range combined {
 			if search == "" || strings.Contains(strings.ToLower(res.Title), strings.ToLower(search)) {
@@ -143,7 +114,7 @@ func main() {
 	// Route Detail (/recipe)
 	http.HandleFunc("/recipe", func(w http.ResponseWriter, r *http.Request) {
 		title := r.URL.Query().Get("title")
-		combined := getRecipesFromDB()
+		combined := getRecipes()
 		var selectedRecipe Recipe
 		found := false
 		for _, res := range combined {
@@ -173,10 +144,9 @@ func main() {
 			return
 		}
 
-		// BYPASS FILE UPLOAD LOCAL: Membaca input teks tautan URL gambar luar jika diisi
 		imageUrl := r.FormValue("image_url")
 		if imageUrl == "" {
-			imageUrl = "default.png" // Menggunakan aset bawaan di folder static jika kosong
+			imageUrl = "default.png"
 		}
 
 		newR := Recipe{
@@ -192,104 +162,32 @@ func main() {
 			Langkah:          r.FormValue("langkah"),
 		}
 
-		err := saveRecipeToDB(newR)
-		if err != nil {
-			log.Println("Gagal menyimpan resep baru ke DB:", err)
-		}
+		// Simpan ke memori (akan hilang jika server restart)
+		inMemoryRecipes = append([]Recipe{newR}, inMemoryRecipes...)
+		
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	})
 
-	// Route Moderasi Edit
-	http.HandleFunc("/moderasi/edit", func(w http.ResponseWriter, r *http.Request) {
-		key := r.URL.Query().Get("key")
-		title := r.URL.Query().Get("title")
-		if key != "kuncirahasia77" {
-			http.Error(w, "Akses ditolak bray!", http.StatusUnauthorized)
-			return
-		}
-
-		combined := getRecipesFromDB()
-		var selected Recipe
-		found := false
-		for _, res := range combined {
-			if res.Title == title {
-				selected = res
-				found = true
-				break
-			}
-		}
-
-		if r.Method == "GET" {
-			if !found {
-				http.NotFound(w, r)
-				return
-			}
-			tmpl, _ := template.ParseFiles("edit.html")
-			tmpl.Execute(w, selected)
-			return
-		}
-
-		if r.Method == "POST" {
-			imageUrl := r.FormValue("image_url")
-			if imageUrl == "" {
-				imageUrl = r.FormValue("old_image")
-			}
-
-			query := `UPDATE recipes SET title=$1, description=$2, time_estimation=$3, image_url=$4, 
-			          simpan_dalam=$5, masa_simpan=$6, tempat_simpan=$7, kualitas_maksimal=$8, bahan=$9, langkah=$10 
-			          WHERE title=$11`
-			_, err := db.Exec(query, r.FormValue("title"), r.FormValue("desc"), r.FormValue("time"), imageUrl,
-				r.FormValue("simpan_dalam"), r.FormValue("masa_simpan"), r.FormValue("tempat_simpan"),
-				r.FormValue("kualitas_maksimal"), r.FormValue("bahan"), r.FormValue("langkah"), title)
-
-			if err != nil {
-				log.Println("Gagal memperbarui data resep di DB:", err)
-			}
-
-			http.Redirect(w, r, "/recipe?title="+r.FormValue("title"), http.StatusSeeOther)
-		}
-	})
-
-	// Route Simpan Makanan
+	// Route lainnya (Simpan, Favorit, dll) dikembalikan sederhana
 	http.HandleFunc("/Simpan-Makanan", func(w http.ResponseWriter, r *http.Request) {
 		tmpl, _ := template.ParseFiles("simpan.html")
 		tmpl.Execute(w, nil)
 	})
 
-	// Route Favorit
 	http.HandleFunc("/favorit", func(w http.ResponseWriter, r *http.Request) {
 		tmpl, _ := template.ParseFiles("favorit.html")
 		tmpl.Execute(w, nil)
 	})
 
-	// Route Detail Simpan
 	http.HandleFunc("/detailsimpan", func(w http.ResponseWriter, r *http.Request) {
 		tmpl, _ := template.ParseFiles("detailsimpan.html")
 		tmpl.Execute(w, nil)
 	})
 
-	// Route Delete
-	http.HandleFunc("/moderasi/delete", func(w http.ResponseWriter, r *http.Request) {
-		key := r.URL.Query().Get("key")
-		title := r.URL.Query().Get("title")
-		if key != "kuncirahasia77" {
-			http.Error(w, "Akses ditolak!", http.StatusUnauthorized)
-			return
-		}
-
-		query := "DELETE FROM recipes WHERE title = $1"
-		_, err := db.Exec(query, title)
-		if err != nil {
-			log.Println("Gagal menghapus data resep dari DB:", err)
-		}
-
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-	})
-
-	// DETEKSI PORT DINAMIS HUGGING FACE
+	// Port diset statis ke 8080 sesuai Dockerfile
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "7860"
+		port = "8080"
 	}
 
 	log.Println("Server running on port:", port)
