@@ -3,18 +3,13 @@ FROM golang:1.21-alpine AS builder
 
 WORKDIR /app
 
-# Salin file konfigurasi module Go terlebih dahulu untuk cache dependensi
-COPY go.mod ./
-# Jika kamu sudah punya go.sum di repositori, aktifkan baris di bawah ini:
-# COPY go.sum ./
-
-# Rapihkan dan unduh dependensi yang dibutuhkan
-RUN go mod tidy
-
-# Salin seluruh source code, folder static, dan file HTML ke dalam container
+# Salin seluruh source code (termasuk go.mod dan main.go) TERLEBIH DAHULU
 COPY . .
 
-# Build binary aplikasi Go (CGO dinonaktifkan agar stabil di Alpine)
+# Sekarang jalankan tidy agar bisa membaca main.go dan mengunduh package (godotenv & pq)
+RUN go mod tidy
+
+# Build binary aplikasi Go
 RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 
 # ================= STEP 2: RUNNER =================
@@ -32,7 +27,7 @@ COPY --from=builder /app/main .
 COPY --from=builder /app/static ./static
 COPY --from=builder /app/*.html ./
 
-# Ekspos port 8080 sesuai konfigurasi Back4App dan kode main.go
+# Ekspos port 8080
 EXPOSE 8080
 
 # Eksekusi aplikasi
