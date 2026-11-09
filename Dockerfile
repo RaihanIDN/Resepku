@@ -1,45 +1,39 @@
 # ================= STEP 1: BUILDER =================
 FROM golang:1.21-alpine AS builder
 
-# Install curl dan unzip untuk mengambil aset dari GitHub publik
-RUN apk add --no-cache curl unzip
-
 WORKDIR /app
 
-# Copy berkas go.mod terlebih dahulu
+# Salin file konfigurasi module Go terlebih dahulu untuk cache dependensi
 COPY go.mod ./
+# Jika kamu sudah punya go.sum di repositori, aktifkan baris di bawah ini:
+# COPY go.sum ./
 
-# Ambil folder static & file HTML segar langsung dari GitHub publik agar sinkron
-RUN curl -L -o repo.zip https://github.com/RaihanIDN/Resepku/archive/refs/heads/main.zip \
-    && unzip repo.zip \
-    && mv Resepku-main/static ./static \
-    && cp Resepku-main/*.html ./ \
-    && rm -rf repo.zip Resepku-main
-
-# Copy source code utama (main.go, dll)
-COPY . .
-
-# Trik Jitu: Ambil library Supabase & .env sekaligus membuat berkas go.sum otomatis bray
+# Rapihkan dan unduh dependensi yang dibutuhkan
 RUN go mod tidy
 
-# Build binary aplikasi Go menjadi berkas mandiri bernama 'main'
-RUN go build -o main .
+# Salin seluruh source code, folder static, dan file HTML ke dalam container
+COPY . .
+
+# Build binary aplikasi Go (CGO dinonaktifkan agar stabil di Alpine)
+RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 
 # ================= STEP 2: RUNNER =================
 FROM alpine:latest
+
+# Tambahkan sertifikat keamanan standar
 RUN apk add --no-cache ca-certificates
 
 WORKDIR /app
 
-# Ambil file binary utama yang sudah bersih
+# Salin file binary utama yang sudah bersih dari tahap builder
 COPY --from=builder /app/main .
 
-# Ambil folder static dan semua file HTML template hasil ekstrak tadi
+# Salin folder static dan file HTML template
 COPY --from=builder /app/static ./static
 COPY --from=builder /app/*.html ./
 
-# Port standar Hugging Face Spaces
+# Ekspos port 8080 sesuai konfigurasi Back4App dan kode main.go
 EXPOSE 8080
 
-# Jalankan aplikasinya bray
+# Eksekusi aplikasi
 CMD ["./main"]
