@@ -7,7 +7,7 @@ RUN apk add --no-cache git
 WORKDIR /app
 
 # Ambil kode TERBARU langsung dari GitHub (termasuk folder static dan port 7860)
-# Cache Buster: v2
+# Cache Buster: v3
 RUN git clone https://github.com/RaihanIDN/Resepku.git .
 
 RUN go mod tidy
