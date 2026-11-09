@@ -39,7 +39,7 @@ COPY --from=builder /app/static ./static
 COPY --from=builder /app/*.html ./
 
 # Port standar Hugging Face Spaces
-EXPOSE 7860
+EXPOSE 8080
 
 # Jalankan aplikasinya bray
 CMD ["./main"]
