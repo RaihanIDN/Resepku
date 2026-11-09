@@ -1,15 +1,16 @@
 # ================= STEP 1: BUILDER =================
 FROM golang:1.21-alpine AS builder
 
+# Install git
+RUN apk add --no-cache git
+
 WORKDIR /app
 
-# Salin seluruh file dari repositori
-COPY . .
+# Ambil kode TERBARU langsung dari GitHub (termasuk folder static dan port 7860)
+# Cache Buster: v2
+RUN git clone https://github.com/RaihanIDN/Resepku.git .
 
-# Rapihkan dependensi
 RUN go mod tidy
-
-# Build binary
 RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 
 # ================= STEP 2: RUNNER =================
@@ -18,14 +19,10 @@ RUN apk add --no-cache ca-certificates
 
 WORKDIR /app
 
-# Salin file binary
 COPY --from=builder /app/main .
-
-# Salin folder static dan HTML
 COPY --from=builder /app/static ./static
 COPY --from=builder /app/*.html ./
 
-# Ekspos port wajib Hugging Face
 EXPOSE 7860
 
 CMD ["./main"]
