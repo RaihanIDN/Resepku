@@ -4,7 +4,6 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -37,7 +36,7 @@ var staticRecipes = []Recipe{
 		Bahan:            "Nasi putih, Bawang merah, Bawang putih, Kecap, Telur",
 		Langkah:          "1. Haluskan bumbu. 2. Tumis bumbu hingga harum. 3. Masukkan nasi dan telur. 4. Aduk rata dan tambahkan kecap.",
 	},
-    {
+	{
 		Title:            "Telur Balado",
 		Desc:             "Telur rebus dengan sambal balado pedas manis.",
 		Time:             "30 Menit",
@@ -164,7 +163,7 @@ func main() {
 
 		// Simpan ke memori (akan hilang jika server restart)
 		inMemoryRecipes = append([]Recipe{newR}, inMemoryRecipes...)
-		
+
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	})
 
@@ -184,11 +183,8 @@ func main() {
 		tmpl.Execute(w, nil)
 	})
 
-	// Port diset statis ke 8080 sesuai Dockerfile
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "7860"
-	}
+	// Langsung kunci ke port 7860 milik Hugging Face Spaces
+	port := "7860"
 
 	log.Println("Server running on port:", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
