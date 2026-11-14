@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kunci Bahan - Resepku</title>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans+Condensed:wght@300;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=2">
     <style>
         /* Paksa style pagination kotak di sini biar gak biru standar bray */
         .pagination {
@@ -16,7 +16,6 @@
             margin: 50px 0;
             width: 100%;
         }
-
         .pagination a {
             text-decoration: none !important;
             color: #1A1A1A !important;
@@ -28,14 +27,28 @@
             transition: 0.3s;
             display: inline-block;
         }
-
         .pagination a.active {
             background-color: #FFEB3B !important; 
             border-color: #FFEB3B !important;
         }
-
         .pagination a:hover:not(.active) {
             background-color: #f0f0f0 !important;
+        }
+
+        /* Paksa gambar melebar penuh mengikuti kotak putih */
+        .recipe-card {
+            display: flex !important;
+            flex-direction: column !important;
+            width: 100% !important;
+            overflow: hidden !important;
+        }
+        .recipe-card img {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 240px !important;
+            object-fit: cover !important;
+            object-position: center !important;
+            display: block !important;
         }
     </style>
 </head>
@@ -70,9 +83,9 @@
 
     <div class="recipe-grid">
         {{range .Recipes}} 
-        <a href="/recipe?title={{.Title}}" style="text-decoration: none; color: inherit; display: block;">
+        <a href="/recipe?title={{.Title}}" style="text-decoration: none; color: inherit; display: block; width: 100%;">
             <div class="recipe-card">
-                <img src="/static/{{.Image}}" alt="{{.Title}}">
+                <img src="/static/{{.Image}}" alt="{{.Title}}" style="width: 100% !important; height: 240px !important; object-fit: cover !important; display: block !important;">
                 <div class="card-content">
                     <h3>{{.Title}}</h3>
                     <p>{{.Desc}}</p>
