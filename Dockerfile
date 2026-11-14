@@ -1,14 +1,13 @@
 # ================= STEP 1: BUILDER =================
 FROM golang:1.21-alpine AS builder
 
-# Install git
-RUN apk add --no-cache git
-
 WORKDIR /app
 
-# Ambil kode TERBARU langsung dari GitHub (termasuk folder static dan port 7860)
-# Cache Buster: v3
-RUN git clone https://github.com/RaihanIDN/Resepku.git .
+# Ambil langsung file terbaru yang sudah dikirim otomatis oleh GitHub Actions dari GitHub
+COPY . .
+
+# Otomatis pastikan port berjalan di 7860 milik Hugging Face
+RUN sed -i 's/8080/7860/g' main.go
 
 RUN go mod tidy
 RUN CGO_ENABLED=0 GOOS=linux go build -o main .
@@ -23,6 +22,7 @@ COPY --from=builder /app/main .
 COPY --from=builder /app/static ./static
 COPY --from=builder /app/*.html ./
 
+ENV PORT=7860
 EXPOSE 7860
 
 CMD ["./main"]
