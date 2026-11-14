@@ -180,6 +180,14 @@ body {
     box-shadow: 0 15px 30px rgba(0,0,0,0.1);
 }
 
+/* Ukuran Gambar di dalam Card */
+.recipe-card img {
+    width: 100%;
+    height: 240px;
+    object-fit: cover;
+    display: block;
+}
+
 .card-content {
     padding: 20px;
 }
@@ -221,24 +229,24 @@ body {
     margin: 0 15px;
     font-size: 22px;
 }
+
 /* Tombol Cari di Hero bray */
-/* Styling tombol Cari di Hero agar kuning seperti Home */
 .btn-cari-hero {
-    background-color: #4CAF50; /* Warna kuning Home */
-    color: white;            /* Warna teks hitam biar kontras */
-    border: none;              /* Hapus border default browser */
-    padding: 0 25px;           /* Kasih ruang kiri-kanan */
-    border-radius: 8px;        /* Biar sudutnya agak bulat dikit */
+    background-color: #4CAF50;
+    color: white;            
+    border: none;              
+    padding: 0 25px;           
+    border-radius: 8px;        
     font-family: 'Montserrat', sans-serif;
-    font-weight: 800;          /* Biar tebel kayak menu Home */
+    font-weight: 800;          
     cursor: pointer;
     transition: 0.3s;
-    height: 54px;              /* Samakan tinggi dengan search input */
+    height: 54px;              
     font-size: 16px;
 }
 
 /* Efek pas kursor nempel */
 .btn-cari-hero:hover {
-    background-color: #4CAF50; /* Kuning agak gelap dikit pas di-hover */
-    transform: translateY(-2px); /* Efek melayang dikit bray */
+    background-color: #4CAF50; 
+    transform: translateY(-2px); 
 }
